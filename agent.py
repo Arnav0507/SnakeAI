@@ -17,7 +17,7 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNET(11, 256, 3)
+        self.model = Linear_QNET(18, 256, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
@@ -32,6 +32,15 @@ class Agent:
         dir_r = game.direction == Direction.RIGHT
         dir_u = game.direction == Direction.UP
         dir_d = game.direction == Direction.DOWN
+
+        # New features
+        dist_food_x = (game.food.x - head.x) / game.w
+        dist_food_y = (game.food.y - head.y) / game.h
+        dist_wall_left = head.x / game.w
+        dist_wall_right = (game.w - head.x) / game.w
+        dist_wall_up = head.y / game.h
+        dist_wall_down = (game.h - head.y) / game.h
+        norm_snake_len = len(game.snake) / ((game.w // game.BLOCK_SIZE) * (game.h // game.BLOCK_SIZE))
 
         state = [
             # Danger straight
@@ -59,13 +68,22 @@ class Agent:
             dir_d,
             
             # Food location 
-            game.food.x < game.head.x,  # food left
-            game.food.x > game.head.x,  # food right
-            game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y  # food down
-            ]
+            game.food.x < head.x,  # food left
+            game.food.x > head.x,  # food right
+            game.food.y < head.y,  # food up
+            game.food.y > head.y,  # food down
 
-        return np.array(state, dtype=int)
+            # New features
+            dist_food_x,
+            dist_food_y,
+            dist_wall_left,
+            dist_wall_right,
+            dist_wall_up,
+            dist_wall_down,
+            norm_snake_len
+        ]
+
+        return np.array(state, dtype=float)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
